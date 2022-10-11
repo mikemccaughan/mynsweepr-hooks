@@ -1,0 +1,344 @@
+:root {
+  --columns: 9;
+  --rows: 9;
+  --block-size: 32px;
+}
+
+body {
+  margin: 0 auto;
+  display: flex;
+  flex-flow: column nowrap;
+  min-height: 100vh;
+  max-width: max-content;
+  overflow-x: auto;
+}
+
+#root {
+  display: flex;
+  flex-flow: column nowrap;
+  margin: 0 auto;
+}
+
+header {
+  flex: 0 1 10vh;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+main {
+  flex: 1 1 80vh;
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+aside {
+  padding: 1rem;
+}
+
+aside>span {
+  margin-right: 1rem;
+}
+
+footer {
+  flex: 0 1 10vh;
+}
+
+header ul {
+  margin: 0;
+  padding: 0;
+  text-indent: 0;
+  display: flex;
+  justify-content: space-evenly;
+}
+
+header li {
+  display: flex;
+  list-style-type: none;
+}
+
+header label span {
+  margin: 0 0.25rem;
+}
+
+footer.dialog-footer {
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+header.dialog-header {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+
+  h1 {
+    margin: 1rem 0;
+  }
+}
+
+dialog {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
+  transition: all 500ms ease-in-out;
+}
+
+dialog[open] {
+  border: initial;
+  background: white;
+  height: max-content;
+  width: max-content;
+}
+
+dialog[open]>* {
+  display: initial;
+}
+
+dialog:not([open]) {
+  border: 0 none transparent;
+  background: transparent;
+  height: 0;
+  width: 0;
+}
+
+dialog:not([open])>* {
+  display: none;
+}
+
+.board {
+  margin: 0 auto;
+  height: calc(var(--rows) * var(--block-size));
+  width: calc(var(--columns) * var(--block-size));
+  display: grid;
+  grid-template-columns: repeat(var(--columns), var(--block-size));
+  grid-template-rows: repeat(var(--rows), var(--block-size));
+}
+
+.cell:hover {
+  transform: scale(1.25);
+  transform-origin: center;
+  position: relative;
+  z-index: 2;
+}
+
+.cell {
+  cursor: pointer;
+  width: var(--block-size);
+  height: var(--block-size);
+  border: 1px outset #ececec;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  transition: transform 250ms ease-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell.hidden {
+  background-color: lightblue;
+  border-color: blue;
+  color: lightblue;
+}
+
+.cell.hidden:active {
+  background-color: orange;
+  border-color: darkorange;
+  color: orange;
+}
+
+.cell.flag {
+  background-color: lightgoldenrodyellow;
+  border-color: goldenrod;
+  color: lightgoldenrodyellow;
+}
+
+.cell.flag::before {
+  content: '🚩';
+  position: absolute;
+}
+
+.cell.mine:not(.hidden):not(.flag) {
+  background-color: red;
+  border-color: darkred;
+  font-size: 0;
+}
+
+.cell.mine:not(.hidden):not(.flag)::before {
+  content: '💣';
+  font-size: 1rem;
+  position: absolute;
+}
+
+.cell.nearby:not(.hidden):not(.flag) {
+  --rotation-base: 90deg;
+  --rotation-multiplier: 20deg;
+  background-color: white;
+  color: green;
+
+  &[data-val="1"] {
+    font-weight: 100;
+  }
+
+  &[data-val="2"] {
+    font-weight: 200;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 2)));
+  }
+
+  &[data-val="3"] {
+    font-weight: 300;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 3)));
+  }
+
+  &[data-val="4"] {
+    font-weight: 400;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 4)));
+  }
+
+  &[data-val="5"] {
+    font-weight: 500;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 5)));
+  }
+
+  &[data-val="6"] {
+    font-weight: 600;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 6)));
+  }
+
+  &[data-val="7"] {
+    font-weight: 700;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 7)));
+  }
+
+  &[data-val="8"] {
+    font-weight: 800;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 8)));
+  }
+}
+
+.cell[data-val="0"]:not(.hidden):not(.flag) {
+  background-color: white;
+  border-color: #e0e0e0aa;
+  border-style: solid;
+  color: white;
+}
+
+.cell[data-x="0"][data-y="0"]:hover {
+  transform-origin: top left;
+}
+
+$hwCombos: '9x9', '16x16', '30x16';
+
+@each $combo in $hwCombos {
+  @if ($combo =='9x9') {
+    html[style="--columns:9; --rows:9;"] {
+      .cell[data-x="8"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="8"][data-y="8"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="8"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"])[data-y="8"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="8"]:not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"]):not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
+
+  @if ($combo =='16x16') {
+    html[style="--columns:16; --rows:16;"] {
+      .cell[data-x="15"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="15"][data-y="15"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="15"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"])[data-y="15"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="15"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"]):not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
+
+  @if ($combo =='30x16') {
+    html[style="--columns:30; --rows:16;"] {
+      .cell[data-x="29"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="29"][data-y="15"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="15"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"])[data-y="15"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="29"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"]):not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
+}
