@@ -40,7 +40,7 @@ const MynSweepr: React.FC = () => {
   const [mineCount, setMineCount] = useState(0);
   const [gameIsActive, setGameIsActive] = useState(false);
   const [gameState, setGameState] = useState<'unknown'|'lost'|'won'>('unknown');
-  const [checkForHighScore, setCheckForHighScore] = useState(false);
+  const [checkForHighScore, setCheckForHighScore] = useState(true);
 
   // const setRowsAndColumns = () => {
   //   setRows();
@@ -132,6 +132,7 @@ const MynSweepr: React.FC = () => {
       showLoseModal();
     }
     if (gameState === 'won') {
+      setCheckForHighScore(false);
       setCheckForHighScore(true);
       showWinModal();
     }
@@ -272,6 +273,10 @@ const MynSweepr: React.FC = () => {
   const handleCellClick: EventHandler<SyntheticEvent> = (e: SyntheticEvent) => {
     console.log('click', e);
     setGameIsActive(true);
+    if (cells[+((e.target as HTMLElement)?.dataset?.index ?? 0)].flag) {
+      // ignore single clicks on flagged cells
+      return;
+    }
     const args: fnArgs = {
       cells,
       mineCount,
@@ -364,6 +369,7 @@ const MynSweepr: React.FC = () => {
           isActive={gameIsActive}
           remaining={mineCount}
           checkHighScore={checkForHighScore}
+          size={`${width}x${height}`}
           ></Scoreboard>
         <Board
           cells={cells}
