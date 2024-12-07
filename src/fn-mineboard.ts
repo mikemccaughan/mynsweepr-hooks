@@ -12,11 +12,11 @@ export interface Cell {
     flag: boolean;
     hadOverlay: boolean;
     wasClicked?: boolean;
-};
+}
 
 function getRandom(maxValue: number): number {
-    let max = 4294967295; // Max Uint32
-    let randomValue = window.crypto.getRandomValues(new Uint32Array(1))[0] / max;
+    const max = 4294967295; // Max Uint32
+    const randomValue = window.crypto.getRandomValues(new Uint32Array(1))[0] / max;
     return Math.floor(randomValue * maxValue);
 }
 
@@ -33,16 +33,18 @@ export function generateBoard(options: {width?: number; height?: number; density
     if (density <= 0 || density >= 1) throw new Error(`density must be > 0 and < 1, got ${density}`);
     const isBetween = (value: number, min: number, max: number): boolean => value >= min && value <= max;
     let cells = new Array(width * height);
-    let mineCount = Math.floor(width * height * density);
-    let boardCells = new Array(height).fill(0).map(_ => new Array(width).fill(0)) as number[][];
-    let value = -(mineCount * 2);
+    const mineCount = Math.floor(width * height * density);
+    const boardCells = new Array(height).fill(0).map(() => new Array(width).fill(0)) as number[][];
+    const value = -(mineCount * 2);
     for (let i = 0; i < mineCount; i++) {
-        let x: number = 0;
-        let y: number = 0;
-        while (true) {
+        let x = 0;
+        let y = 0;
+        let stop = false;
+        while (!stop) {
             x = getRandom(width);
             y = getRandom(height);
             if (boardCells[y][x] >= 0) {
+                stop = true;
                 break;
             }
         }
@@ -73,7 +75,7 @@ function createCells(width: number, height: number, boardCells: number[][]): Cel
     let index = 0;
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            let i = index;
+            const i = index;
             cells[index++] = {
                 val: boardCells[y][x],
                 hasMine: boardCells[y][x] < 0,
@@ -101,11 +103,12 @@ export interface fnArgs {
     index: number;
     hadOverlay?: boolean;
     wasClicked?: boolean;
-    onLose?: Function;
-    onBlank?: Function;
-    onNearby?: Function;
-    onWin?: Function;
-    onReveal?: Function;
+    continue?: boolean;
+    onLose?: (args: fnArgs) => fnArgs;
+    onBlank?: (args: fnArgs) => fnArgs;
+    onNearby?: (args: fnArgs) => fnArgs;
+    onWin?: (args: fnArgs) => fnArgs;
+    onReveal?: (args: fnArgs) => fnArgs;
 }
 
 export interface clearAroundArgs extends fnArgs {
@@ -131,6 +134,7 @@ export function clearAround(args: clearAroundArgs): fnArgs {
         index: args.index,
         hadOverlay: cell.hadOverlay,
         wasClicked: false,
+        continue: args.continue ?? false,
         onLose: args.onLose,
         onBlank: args.onBlank,
         onNearby: args.onNearby,
@@ -146,7 +150,7 @@ export function clearAround(args: clearAroundArgs): fnArgs {
             }
         }
     }
-
+    revealCellArgs.mineCount = getMineCount(revealCellArgs.cells);
     return revealCellArgs;
 }
 
@@ -168,7 +172,7 @@ function updateCellAtIndex(args: updateCellArgs): Cell[] {
     const cellsBefore = allCells.filter(c => c.index < args.index);
     const cellsAfter = allCells.filter(c => c.index > args.index);
     const changedCell = { ...cellToChange, [args.propertyName]: args.propertyValue };
-    return [ 
+    const newCells = [ 
         ...cellsBefore,
         changedCell,
         ...cellsAfter
@@ -179,6 +183,7 @@ export interface revealCellArgs extends fnArgs {
     hadOverlay: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface showCellArgs extends fnArgs {
 }
 
@@ -237,25 +242,28 @@ export function showCell(args: showCellArgs): fnArgs {
         args = args.onWin(args);
     }
 
+    args.mineCount = getMineCount(args.cells);
     return args;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface flagCellArgs extends fnArgs {
 }
 
 export function flagCell(args: flagCellArgs): fnArgs {
     Logger.trace(`flagCell: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
     const cell = args.cells[args.index];
-    return {
+    const returnArgs = {
         ...args,
         cells: updateCellAtIndex({
             cells: args.cells, 
             index: args.index, 
             propertyName: 'flag', 
             propertyValue: !cell.flag
-        }),
-        mineCount: args.mineCount - (cell.flag ? -1 : 1)
+        })
     };
+    returnArgs.mineCount = getMineCount(returnArgs.cells);
+    return returnArgs;
 }
 
 export function showAllCells(cells: Cell[]): Cell[] {

@@ -10,6 +10,7 @@ import React, {
   useEffect,
   useRef,
   MouseEventHandler,
+  MouseEventHandler,
 } from 'react';
 import Difficulty from './Difficulty';
 import Board from './Board';
@@ -95,10 +96,37 @@ const MynSweepr: React.FC = () => {
   }, [height, prevHeight]);
 
   useLayoutEffect(() => {
-    let board = generateBoard({ width, height, density: 1 / 6 });
+    const board = generateBoard({ width, height, density: 1 / 6 });
     setCells(() => board.cells);
     setMineCount(() => board.mineCount);
   }, [width, height]);
+
+  useEffect(() => {
+    const mineCount = cells.filter((cell) => cell.hasMine && !cell.flag).length;
+    const blownMineCount = cells.filter((cell) => cell.hasMine && !cell.hidden && !cell.flag).length;
+    const hiddenCount = cells.filter((cell) => cell.hidden && !cell.flag).length;
+    if (mineCount === 0 && blownMineCount === 0 && hiddenCount === 0) {
+      setGameState('won');
+    } else if (blownMineCount > 0) {
+      setGameState('lost');
+    } else if (mineCount > 0 && blownMineCount === 0 && hiddenCount > 0) {
+      setGameState('unknown');
+    }
+  }, [cells]);
+
+  useEffect(() => {
+    if (gameState === 'lost') {
+      showLoseModal();
+    }
+    if (gameState === 'won') {
+      setCheckForHighScore(false);
+      setCheckForHighScore(true);
+      showWinModal();
+    }
+    if (gameState === 'unknown') {
+      // do nothing
+    }
+  }, [gameState]);
 
   const handleDifficultyChange = (
     e: MouseEvent<HTMLInputElement, globalThis.MouseEvent>
@@ -161,7 +189,28 @@ const MynSweepr: React.FC = () => {
     Logger.trace(`${extraToLog} onBlank: args: ${JSON.stringify(args, stringifyArgs)}`);
     args = clearAround(args as clearAroundArgs);
     setCells(args.cells);
+    setMineCount(args.mineCount);
     return args;
+  };
+
+  const showLoseModal = () => {
+    const loseModal = document.getElementById('lose') as HTMLDialogElement;
+    if (loseModal && typeof loseModal.showModal === 'function' && !loseModal.open) {
+      loseModal.showModal();
+      loseModal.addEventListener('close', () => {
+        resetBoard();
+      });
+    }
+  };
+
+  const showWinModal = () => {
+    const winModal = document.getElementById('win') as HTMLDialogElement;
+    if (winModal && typeof winModal.showModal === 'function' && !winModal.open) {
+      winModal.showModal();
+      winModal.addEventListener('close', () => {
+        resetBoard();
+      });
+    }
   };
 
   const makeStandardOnLose = (extraToLog: string) => (args: fnArgs) => {
@@ -170,6 +219,7 @@ const MynSweepr: React.FC = () => {
     DialogManager.instance.open("loss");
     Logger.trace(`${extraToLog} onLose: args: ${JSON.stringify(args, stringifyArgs)}`);
     setCells(args.cells);
+    setMineCount(args.mineCount);
     return args;
   };
 
@@ -179,6 +229,7 @@ const MynSweepr: React.FC = () => {
     DialogManager.instance.open("win");
     Logger.trace(`${extraToLog} onWin: args: ${JSON.stringify(args, stringifyArgs)}`);
     setCells(args.cells);
+    setMineCount(args.mineCount);
     return args;
   };
 
@@ -186,6 +237,7 @@ const MynSweepr: React.FC = () => {
     Logger.trace(`${extraToLog} onNearby: args: ${JSON.stringify(args, stringifyArgs)}`);
     args = clearAround(args as clearAroundArgs);
     setCells(args.cells);
+    setMineCount(args.mineCount);
     return args;
   };
 
@@ -204,7 +256,7 @@ const MynSweepr: React.FC = () => {
       ...args,
       cells: newCells
     };
-    if (!cellToUpdate.hadOverlay) {
+    if (!cellToUpdate.hadOverlay && !cellToUpdate.flag) {
       args = showCell(args as showCellArgs);
     }
     setCells(args.cells);
@@ -214,18 +266,24 @@ const MynSweepr: React.FC = () => {
   const handleCellClick: EventHandler<SyntheticEvent> = (e: SyntheticEvent) => {
     Logger.trace('click', e);
     setGameIsActive(true);
-    let args: fnArgs = {
+    if (cells[+((e.target as HTMLElement)?.dataset?.index ?? 0)].flag) {
+      // ignore single clicks on flagged cells
+      return;
+    }
+    const args: fnArgs = {
       cells,
       mineCount,
       index: +((e.target as HTMLElement)?.dataset?.index ?? 0),
       hadOverlay:
         (e.target as HTMLElement)?.classList?.contains('hidden') ?? false,
       wasClicked: true,
-      onBlank: makeStandardOnBlank('handleCellClick:'),
-      onLose: makeStandardOnLose('handleCellClick:'),
-      onNearby: makeStandardOnNearby('handleCellClick:'),
-      onReveal: makeStandardOnReveal('handleCellClick:'),
-      onWin: makeStandardOnWin('handleCellClick:'),
+      continue: 
+        !((e.target as HTMLElement)?.classList?.contains('hidden') ?? false),
+      onBlank: makeStandardOnBlank('handleCellClick: onBlank:'),
+      onLose: makeStandardOnLose('handleCellClick: onLose:'),
+      onNearby: makeStandardOnNearby('handleCellClick: onNearby:'),
+      onReveal: makeStandardOnReveal('handleCellClick: onReveal:'),
+      onWin: makeStandardOnWin('handleCellClick: onWin:'),
     };
     const result = revealCell(args as revealCellArgs);
     setCells(result.cells);
@@ -238,18 +296,19 @@ const MynSweepr: React.FC = () => {
   ) => {
     Logger.trace('double-click', e);
     setGameIsActive(true);
-    let args: fnArgs = {
+    const args: fnArgs = {
       cells,
       mineCount,
       index: +((e.target as HTMLElement)?.dataset?.index ?? 0),
       hadOverlay:
         (e.target as HTMLElement)?.classList?.contains('hidden') ?? false,
       wasClicked: true,
-      onBlank: makeStandardOnBlank('handleCellDoubleClick:'),
-      onLose: makeStandardOnLose('handleCellDoubleClick:'),
-      onNearby: makeStandardOnNearby('handleCellDoubleClick:'),
-      onReveal: makeStandardOnReveal('handleCellDoubleClick:'),
-      onWin: makeStandardOnWin('handleCellDoubleClick:'),
+      continue: true,
+      onBlank: makeStandardOnBlank('handleCellDoubleClick: onBlank:'),
+      onLose: makeStandardOnLose('handleCellDoubleClick: onLose:'),
+      onNearby: makeStandardOnNearby('handleCellDoubleClick: onNearby:'),
+      onReveal: makeDoubleClickOnReveal('handleCellDoubleClick: onReveal:'),
+      onWin: makeStandardOnWin('handleCellDoubleClick: onWin:'),
     };
     const result = clearAround(args as clearAroundArgs);
     setCells(result.cells);
@@ -270,13 +329,15 @@ const MynSweepr: React.FC = () => {
       hadOverlay:
         (e.target as HTMLElement)?.classList?.contains('hidden') ?? false,
       wasClicked: true,
-      onBlank: makeStandardOnBlank('handleCellRightClick:'),
-      onLose: makeStandardOnLose('handleCellRightClick:'),
-      onNearby: makeStandardOnNearby('handleCellRightClick:'),
-      onReveal: makeStandardOnReveal('handleCellRightClick:'),
-      onWin: makeStandardOnWin('handleCellRightClick:'),
+      continue: 
+        !((e.target as HTMLElement)?.classList?.contains('hidden') ?? false),
+      onBlank: makeStandardOnBlank('handleCellRightClick: onBlank:'),
+      onLose: makeStandardOnLose('handleCellRightClick: onLose:'),
+      onNearby: makeStandardOnNearby('handleCellRightClick: onNearby:'),
+      onReveal: makeStandardOnReveal('handleCellRightClick: onReveal:'),
+      onWin: makeStandardOnWin('handleCellRightClick: onWin:'),
     };
-    const result = flagCell(args as clearAroundArgs);
+    const result = flagCell(args as flagCellArgs);
     setCells(result.cells);
     setMineCount(result.mineCount);
     checkWin(result);
@@ -284,6 +345,7 @@ const MynSweepr: React.FC = () => {
 
   return (
     <Fragment>
+      <React.StrictMode>
       <header>
         <Difficulty
           difficulty={difficulty}
@@ -305,7 +367,9 @@ const MynSweepr: React.FC = () => {
           difficulty={difficulty}
           isActive={gameIsActive}
           remaining={mineCount}
-        ></Scoreboard>
+          checkHighScore={checkForHighScore}
+          size={`${width}x${height}`}
+          ></Scoreboard>
         <Board
           cells={cells}
           cellClick={handleCellClick}
@@ -340,6 +404,7 @@ const MynSweepr: React.FC = () => {
         </Dialog>
       </main>
       <footer></footer>
+      </React.StrictMode>
     </Fragment>
   );
 };

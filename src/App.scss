@@ -37,7 +37,7 @@ aside {
   padding: 1rem;
 }
 
-aside > span {
+aside>span {
   margin-right: 1rem;
 }
 
@@ -62,6 +62,53 @@ header label span {
   margin: 0 0.25rem;
 }
 
+footer.dialog-footer {
+  flex: 0 0 100%;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+header.dialog-header {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+
+  h1 {
+    margin: 1rem 0;
+  }
+}
+
+dialog {
+  display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
+  transition: all 500ms ease-in-out;
+}
+
+dialog[open] {
+  border: 1px solid #000;
+  box-shadow: 0px 0px 8px 8px #00000033;
+  background: white;
+  height: max-content;
+  width: max-content;
+}
+
+dialog[open]>* {
+  display: initial;
+}
+
+dialog:not([open]) {
+  border: 0 none transparent;
+  background: transparent;
+  height: 0;
+  width: 0;
+}
+
+dialog:not([open])>* {
+  display: none;
+}
+
 .board {
   margin: 0 auto;
   height: calc(var(--rows) * var(--block-size));
@@ -73,7 +120,11 @@ header label span {
 
 .cell:hover {
   transform: scale(1.25);
+  transform-origin: center;
+  position: relative;
+  z-index: 2;
 }
+
 .cell {
   cursor: pointer;
   width: var(--block-size);
@@ -83,23 +134,31 @@ header label span {
   margin: 0;
   padding: 0;
   transition: transform 250ms ease-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .cell.hidden {
   background-color: lightblue;
-  border-color: lightblue;
+  border-color: blue;
   color: lightblue;
 }
+
 .cell.hidden:active {
   background-color: orange;
-  border-color: orange;
+  border-color: darkorange;
   color: orange;
 }
+
 .cell.flag {
   background-color: lightgoldenrodyellow;
   border-color: lightgoldenrodyellow;
   color: lightgoldenrodyellow;
   overflow: hidden;
 }
+
 .cell.flag::before {
   content: "🚩";
   min-width: var(--block-size);
@@ -108,11 +167,13 @@ header label span {
   align-items: center;
   justify-content: center;
 }
+
 .cell.mine:not(.hidden):not(.flag) {
   background-color: red;
-  border-color: red;
+  border-color: darkred;
   font-size: 0;
 }
+
 .cell.mine:not(.hidden):not(.flag)::before {
   content: '💣';
   min-width: var(--block-size);
@@ -122,13 +183,172 @@ header label span {
   align-items: center;
   justify-content: center;
 }
+
 .cell.nearby:not(.hidden):not(.flag) {
+  --rotation-base: 90deg;
+  --rotation-multiplier: 20deg;
   background-color: white;
-  color: black;
+  color: green;
+
+  &[data-val="1"] {
+    font-weight: 100;
+  }
+
+  &[data-val="2"] {
+    font-weight: 200;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 2)));
+  }
+
+  &[data-val="3"] {
+    font-weight: 300;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 3)));
+  }
+
+  &[data-val="4"] {
+    font-weight: 400;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 4)));
+  }
+
+  &[data-val="5"] {
+    font-weight: 500;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 5)));
+  }
+
+  &[data-val="6"] {
+    font-weight: 600;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 6)));
+  }
+
+  &[data-val="7"] {
+    font-weight: 700;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 7)));
+  }
+
+  &[data-val="8"] {
+    font-weight: 800;
+    filter: hue-rotate(calc(var(--rotation-base) + calc(var(--rotation-multiplier) * 8)));
+  }
 }
+
 .cell[data-val="0"]:not(.hidden):not(.flag) {
   background-color: white;
   border-color: #e0e0e0aa;
   border-style: solid;
   color: white;
+}
+
+.cell[data-x="0"][data-y="0"]:hover {
+  transform-origin: top left;
+}
+
+$hwCombos: '9x9', '16x16', '30x16';
+
+@each $combo in $hwCombos {
+  @if ($combo =='9x9') {
+    html[style="--columns:9; --rows:9;"] {
+      .cell[data-x="8"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="8"][data-y="8"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="8"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"])[data-y="8"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="8"]:not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="8"]):not([data-y="0"]):not([data-y="8"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
+
+  @if ($combo =='16x16') {
+    html[style="--columns:16; --rows:16;"] {
+      .cell[data-x="15"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="15"][data-y="15"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="15"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"])[data-y="15"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="15"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="15"]):not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
+
+  @if ($combo =='30x16') {
+    html[style="--columns:30; --rows:16;"] {
+      .cell[data-x="29"][data-y="0"]:hover {
+        transform-origin: top right;
+      }
+
+      .cell[data-x="29"][data-y="15"]:hover {
+        transform-origin: bottom right;
+      }
+
+      .cell[data-x="0"][data-y="15"]:hover {
+        transform-origin: bottom left;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"])[data-y="15"]:hover {
+        transform-origin: bottom center;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"])[data-y="0"]:hover {
+        transform-origin: top center;
+      }
+
+      .cell[data-x="0"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center left;
+      }
+
+      .cell[data-x="29"]:not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center right;
+      }
+
+      .cell:not([data-x="0"]):not([data-x="29"]):not([data-y="0"]):not([data-y="15"]):hover {
+        transform-origin: center;
+      }
+    }
+  }
 }
