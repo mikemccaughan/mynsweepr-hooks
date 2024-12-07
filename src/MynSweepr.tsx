@@ -9,6 +9,7 @@ import React, {
   useLayoutEffect,
   useEffect,
   useRef,
+  MouseEventHandler,
 } from 'react';
 import Difficulty from './Difficulty';
 import Board from './Board';
@@ -25,7 +26,10 @@ import {
   clearAroundArgs,
   revealCellArgs,
   showCellArgs,
+  stringifyArgs,
 } from './fn-mineboard';
+import { Dialog, DialogManager } from './Dialog';
+import { Logger } from './Logger';
 
 const MynSweepr: React.FC = () => {
   const [difficulty, setDifficulty] = useState('9');
@@ -38,11 +42,6 @@ const MynSweepr: React.FC = () => {
   const [mineCount, setMineCount] = useState(0);
   const [gameIsActive, setGameIsActive] = useState(false);
 
-  // const setRowsAndColumns = () => {
-  //   setRows();
-  //   setColumns();
-  // };
-
   const setRows = () => {
     document.documentElement.style.setProperty('--rows', height.toString());
   };
@@ -50,6 +49,12 @@ const MynSweepr: React.FC = () => {
   const setColumns = () => {
     document.documentElement.style.setProperty('--columns', width.toString());
   };
+
+  function checkWin(args: fnArgs): void {
+    if ((args?.mineCount ?? 1) === 0 && (args?.cells.every((cell) => !cell.hidden || cell.flag) ?? false)) {
+      args?.onWin ? args.onWin(args) : (() => {})();
+    }
+  }
 
   function usePrevious(value: string | number) {
     const ref = useRef<string | number>();
@@ -119,8 +124,41 @@ const MynSweepr: React.FC = () => {
     setHeight(ght);
   };
 
+  const getTempOtherDifficulty = (selectedDifficulty: '?' | '9' | '16' | '30'): '9' | '16' | '30' => {
+    let tempOtherDifficulty: '9' | '16' | '30';
+    switch (selectedDifficulty) {
+      case '9':
+        tempOtherDifficulty = '16';
+        break;
+      case '16':
+        tempOtherDifficulty = '30';
+        break;
+      case '30':
+        tempOtherDifficulty = '16';
+        break;
+      case '?':
+        tempOtherDifficulty = '9';
+        break;
+    }
+    return tempOtherDifficulty;
+  };
+
+  const handleRequestForNewBoard: MouseEventHandler = (
+    e: MouseEvent<HTMLButtonElement, globalThis.MouseEvent>
+  ) => {
+    const selectedRadio: HTMLInputElement = window.document.querySelector('input[type="radio"][name="difficulty"]:checked') as HTMLInputElement;
+    const selectedDifficulty: '?' | '9' | '16' | '30' = ((selectedRadio?.value ?? '9') as '?' | '9' | '16' | '30');
+    // TODO: Save custom width and height along with ? so we can reset correctly
+    const tempOtherDifficulty: '9' | '16' | '30' = getTempOtherDifficulty(selectedDifficulty);
+    setGameIsActive(false);
+    setDifficulty(tempOtherDifficulty);
+    window.setTimeout(() => {
+      setDifficulty(selectedDifficulty);
+    }, 0);
+  };
+
   const makeStandardOnBlank = (extraToLog: string) => (args: fnArgs) => {
-    console.log(`${extraToLog} onBlank: args: ${JSON.stringify(args)}`);
+    Logger.trace(`${extraToLog} onBlank: args: ${JSON.stringify(args, stringifyArgs)}`);
     args = clearAround(args as clearAroundArgs);
     setCells(args.cells);
     return args;
@@ -129,8 +167,8 @@ const MynSweepr: React.FC = () => {
   const makeStandardOnLose = (extraToLog: string) => (args: fnArgs) => {
     setGameIsActive(false);
     args.cells = showAllCells(args.cells);
-    // TODO: show dialog
-    console.log(`${extraToLog} onLose: args: ${JSON.stringify(args)}`);
+    DialogManager.instance.open("loss");
+    Logger.trace(`${extraToLog} onLose: args: ${JSON.stringify(args, stringifyArgs)}`);
     setCells(args.cells);
     return args;
   };
@@ -138,21 +176,21 @@ const MynSweepr: React.FC = () => {
   const makeStandardOnWin = (extraToLog: string) => (args: fnArgs) => {
     setGameIsActive(false);
     args.cells = showAllCells(args.cells);
-    // TODO: show dialog
-    console.log(`${extraToLog} onWin: args: ${JSON.stringify(args)}`);
+    DialogManager.instance.open("win");
+    Logger.trace(`${extraToLog} onWin: args: ${JSON.stringify(args, stringifyArgs)}`);
     setCells(args.cells);
     return args;
   };
 
   const makeStandardOnNearby = (extraToLog: string) => (args: fnArgs) => {
-    console.log(`${extraToLog} onNearby: args: ${JSON.stringify(args)}`);
+    Logger.trace(`${extraToLog} onNearby: args: ${JSON.stringify(args, stringifyArgs)}`);
     args = clearAround(args as clearAroundArgs);
     setCells(args.cells);
     return args;
   };
 
   const makeStandardOnReveal = (extraToLog: string) => (args: fnArgs) => {
-    console.log(`${extraToLog} onReveal: args: ${JSON.stringify(args)}`);
+    Logger.trace(`${extraToLog} onReveal: args: ${JSON.stringify(args, stringifyArgs)}`);
     const cellToUpdate = args.cells[args.index];
     const newCells = [
       ...args.cells.filter((c, i) => i < args.index),
@@ -174,7 +212,7 @@ const MynSweepr: React.FC = () => {
   };
 
   const handleCellClick: EventHandler<SyntheticEvent> = (e: SyntheticEvent) => {
-    console.log('click', e);
+    Logger.trace('click', e);
     setGameIsActive(true);
     let args: fnArgs = {
       cells,
@@ -192,12 +230,13 @@ const MynSweepr: React.FC = () => {
     const result = revealCell(args as revealCellArgs);
     setCells(result.cells);
     setMineCount(result.mineCount);
+    checkWin(result);
   };
 
   const handleCellDoubleClick: EventHandler<SyntheticEvent> = (
     e: SyntheticEvent
   ) => {
-    console.log('double-click', e);
+    Logger.trace('double-click', e);
     setGameIsActive(true);
     let args: fnArgs = {
       cells,
@@ -215,6 +254,7 @@ const MynSweepr: React.FC = () => {
     const result = clearAround(args as clearAroundArgs);
     setCells(result.cells);
     setMineCount(result.mineCount);
+    checkWin(result);
   };
 
   const handleCellRightClick: EventHandler<SyntheticEvent> = (
@@ -222,7 +262,7 @@ const MynSweepr: React.FC = () => {
   ) => {
     e.preventDefault();
     setGameIsActive(true);
-    console.log('right-click', e);
+    Logger.trace('right-click', e);
     let args: fnArgs = {
       cells,
       mineCount,
@@ -239,6 +279,7 @@ const MynSweepr: React.FC = () => {
     const result = flagCell(args as clearAroundArgs);
     setCells(result.cells);
     setMineCount(result.mineCount);
+    checkWin(result);
   };
 
   return (
@@ -252,9 +293,16 @@ const MynSweepr: React.FC = () => {
           height={height}
           heightChanged={handleHeightChange}
         ></Difficulty>
+        <button 
+          type="button"
+          className="reset"
+          onClick={handleRequestForNewBoard}>
+          Reset
+        </button>  
       </header>
       <main>
         <Scoreboard
+          difficulty={difficulty}
           isActive={gameIsActive}
           remaining={mineCount}
         ></Scoreboard>
@@ -264,6 +312,32 @@ const MynSweepr: React.FC = () => {
           cellDoubleClick={handleCellDoubleClick}
           cellRightClick={handleCellRightClick}
         ></Board>
+        <Dialog id="win" isOpen={false}>
+          <header className="dialog-header">
+            Success!
+          </header>
+          <div className='dialog-body'>
+            <p>You won! Congrats!</p>
+          </div>
+          <footer className='dialog-footer'>
+            <div className='dialog-buttons'>
+              <button type="button" onClick={() => DialogManager.instance.close("win")}>❤️ Noice</button>
+            </div>
+          </footer>
+        </Dialog>
+        <Dialog id="loss" isOpen={false}>
+          <header className="dialog-header">
+            Failure!
+          </header>
+          <div className='dialog-body'>
+            <p>You lose! *Sad trombone*</p>
+          </div>
+          <footer className='dialog-footer'>
+            <div className='dialog-buttons'>
+              <button type="button" onClick={() => DialogManager.instance.close("loss")}>💩 That sucks</button>
+            </div>
+          </footer>
+        </Dialog>
       </main>
       <footer></footer>
     </Fragment>

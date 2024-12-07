@@ -1,3 +1,6 @@
+import { CellProps } from "./Cell";
+import { Logger } from "./Logger";
+
 export interface Cell {
     val: number;
     hasMine: boolean;
@@ -15,7 +18,6 @@ function getRandom(maxValue: number): number {
     let max = 4294967295; // Max Uint32
     let randomValue = window.crypto.getRandomValues(new Uint32Array(1))[0] / max;
     return Math.floor(randomValue * maxValue);
-    // return Math.floor(Math.random() * maxValue);
 }
 
 function getMineCount(boardCells: number[][]): number {
@@ -56,15 +58,14 @@ export function generateBoard(options: {width?: number; height?: number; density
         }
     }
 
-    console.log('board', JSON.stringify(boardCells, null, 2));
     const actualMineCount = getMineCount(boardCells);
     if (actualMineCount > mineCount) {
-        console.warn(`Too many mines! target: ${mineCount}; actual: ${actualMineCount}`);
+        Logger.warn(`Too many mines! target: ${mineCount}; actual: ${actualMineCount}`);
     }
 
     cells = createCells(width, height, boardCells);
 
-    return { cells, mineCount };
+    return { cells, mineCount: actualMineCount };
 }
 
 function createCells(width: number, height: number, boardCells: number[][]): Cell[] {
@@ -90,6 +91,10 @@ function createCells(width: number, height: number, boardCells: number[][]): Cel
     return cells;
 }
 
+export function sortByIndex(a: CellProps, b: CellProps): number {
+    return (a.index ?? 0) - (b.index ?? 0);
+}
+
 export interface fnArgs {
     cells: Cell[];
     mineCount: number;
@@ -109,7 +114,7 @@ export interface clearAroundArgs extends fnArgs {
 }
 
 export function clearAround(args: clearAroundArgs): fnArgs {
-    console.log(`clearAround: args: ${JSON.stringify(args, null, 2)}`);
+    Logger.trace(`clearAround: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
     const cell = args.cells[args.index];
     const minX = cell.x === 0 ? 0 : cell.x - 1;
     const maxX = cell.x === args.width - 1 ? cell.x : cell.x + 1;
@@ -132,11 +137,12 @@ export function clearAround(args: clearAroundArgs): fnArgs {
         onWin: args.onWin,
         onReveal: args.onReveal
     };
-    for (let x = minX; x < maxX; x++) {
-        for (let y = minY; y < maxY; y++) {
+    Logger.trace(`clearAround: x from ${minX} to ${maxX}; y from ${minY} to ${maxY}`);
+    for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
             let nextCell = args.cells.find(c => c.x === x && c.y === y);
-            if (nextCell && nextCell.index !== args.index && nextCell.hidden) {
-                revealCellArgs = revealCell(revealCellArgs as revealCellArgs);
+            if (nextCell && nextCell.index !== args.index && nextCell.hidden && !nextCell.flag) {
+                revealCellArgs = revealCell({...revealCellArgs, index: nextCell.index} as revealCellArgs);
             }
         }
     }
@@ -152,20 +158,21 @@ interface updateCellArgs {
 }
 
 function updateCellAtIndex(args: updateCellArgs): Cell[] {
-    console.log(`updateCellAtIndex: args: ${JSON.stringify(args, null, 2)}`);
-    const cellToChange = args.cells.find(c => c.index === args.index);
+    Logger.trace(`updateCellAtIndex: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
+    const allCells = args.cells.sort(sortByIndex);
+    const cellToChange = allCells.find(c => c.index === args.index);
     if (typeof cellToChange === 'undefined') {
-        console.warn(`Unable to find a cell at index ${args.index}. Giving up...`);
-        return args.cells;
+        Logger.warn(`Unable to find a cell at index ${args.index}. Giving up...`);
+        return allCells;
     }
-    const cellsBefore = args.cells.filter(c => c.index < args.index);
-    const cellsAfter = args.cells.filter(c => c.index > args.index);
+    const cellsBefore = allCells.filter(c => c.index < args.index);
+    const cellsAfter = allCells.filter(c => c.index > args.index);
     const changedCell = { ...cellToChange, [args.propertyName]: args.propertyValue };
     return [ 
         ...cellsBefore,
         changedCell,
         ...cellsAfter
-    ];
+    ].sort(sortByIndex);
 }
 
 export interface revealCellArgs extends fnArgs {
@@ -175,8 +182,17 @@ export interface revealCellArgs extends fnArgs {
 export interface showCellArgs extends fnArgs {
 }
 
+export function stringifyArgs(key: string, value: unknown): any {
+    if (key === "cells") {
+        return `[] {length: ${(value as any[]).length}}`;
+    } else if (typeof value === 'object' && Array.isArray(value) && value.length > 2) {
+        return `[] {length: ${(value as any[]).length}}`;
+    }
+    return value;
+}
+
 export function revealCell(args: revealCellArgs): fnArgs {
-    console.log(`revealCell: args: ${JSON.stringify(args, null, 2)}`);
+    Logger.trace(`revealCell: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
     if (args.onReveal) args = args.onReveal(args);
     args = {
         ...args,
@@ -191,7 +207,7 @@ export function revealCell(args: revealCellArgs): fnArgs {
 }
 
 export function showCell(args: showCellArgs): fnArgs {
-    console.log(`showCell: args: ${JSON.stringify(args, null, 2)}`);
+    Logger.trace(`showCell: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
     const cell = args.cells[args.index];
     args = {
         ...args,
@@ -202,7 +218,7 @@ export function showCell(args: showCellArgs): fnArgs {
             propertyValue: false
         })
     };
-    if (cell.hasMine) {
+    if (cell.hasMine && !cell.flag) {
         args = {
             ...args,
             cells: updateCellAtIndex({
@@ -213,14 +229,12 @@ export function showCell(args: showCellArgs): fnArgs {
             })
         };
     }
-    if (cell.hasMine && args.onLose) {
+    if (cell.hasMine && !cell.flag && args.onLose) {
         args = args.onLose(args);
     } else if (cell.nearby === 0 && args.onBlank) {
         args = args.onBlank(args);
-    } else if (args.mineCount === 0 && args.onWin) {
+    } else if (args.mineCount === 0 && !args.cells.some((cel) => cel.hasMine) && args.onWin) {
         args = args.onWin(args);
-    } else if (cell.nearby > 0 && args.onNearby) {
-        args = args.onNearby(args);
     }
 
     return args;
@@ -230,7 +244,7 @@ export interface flagCellArgs extends fnArgs {
 }
 
 export function flagCell(args: flagCellArgs): fnArgs {
-    console.log(`flagCell: args: ${JSON.stringify(args, null, 2)}`);
+    Logger.trace(`flagCell: args: ${JSON.stringify(args, stringifyArgs, 2)}`);
     const cell = args.cells[args.index];
     return {
         ...args,
@@ -245,12 +259,12 @@ export function flagCell(args: flagCellArgs): fnArgs {
 }
 
 export function showAllCells(cells: Cell[]): Cell[] {
-    console.log(`showAllCells: cells: ${JSON.stringify(cells, null, 2)}`);
+    Logger.trace(`showAllCells: cells: ${JSON.stringify(cells, stringifyArgs, 2)}`);
     return [
         ...cells.filter(c => !c.hidden),
         ...cells.filter(c => c.hidden).map(c => ({
             ...c,
             hidden: false
         }))
-    ].sort((a, b) => a.index - b.index);
+    ].sort(sortByIndex);
 }
