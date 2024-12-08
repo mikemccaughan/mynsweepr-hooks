@@ -1,5 +1,6 @@
 import { CellProps } from "./Cell";
 import { Logger } from "./Logger";
+import { Utils } from './Utils';
 
 export interface Cell {
     val: number;
@@ -20,8 +21,14 @@ function getRandom(maxValue: number): number {
     return Math.floor(randomValue * maxValue);
 }
 
-function getMineCount(boardCells: number[][]): number {
-    return boardCells.reduce((agg: number, cur: number[]) => agg = cur.reduce((a: number, c: number) => a += c < 0 ? 1 : 0, agg), 0);
+function getMineCount(boardCells: Cell[]): number;
+function getMineCount(boardCells: number[][]): number;
+function getMineCount(boardCells: number[][] | Cell[]): number {
+    if (Utils.getDimensionCount(boardCells) === 2) {
+        return (boardCells as number[][]).reduce((agg: number, cur: number[]) => agg = cur.reduce((a: number, c: number) => a += c < 0 ? 1 : 0, agg), 0);
+    } else {
+        return (boardCells as Cell[]).reduce((agg: number, cur: Cell) => agg + (cur.hasMine && !cur.flag ? 1 : 0), 0)
+    }
 }
 
 export function generateBoard(options: {width?: number; height?: number; density?: number;}): { cells: Cell[], mineCount: number } {
@@ -144,7 +151,7 @@ export function clearAround(args: clearAroundArgs): fnArgs {
     Logger.trace(`clearAround: x from ${minX} to ${maxX}; y from ${minY} to ${maxY}`);
     for (let x = minX; x <= maxX; x++) {
         for (let y = minY; y <= maxY; y++) {
-            let nextCell = args.cells.find(c => c.x === x && c.y === y);
+            const nextCell = args.cells.find(c => c.x === x && c.y === y);
             if (nextCell && nextCell.index !== args.index && nextCell.hidden && !nextCell.flag) {
                 revealCellArgs = revealCell({...revealCellArgs, index: nextCell.index} as revealCellArgs);
             }
@@ -177,21 +184,23 @@ function updateCellAtIndex(args: updateCellArgs): Cell[] {
         changedCell,
         ...cellsAfter
     ].sort(sortByIndex);
+
+    return newCells;
 }
 
 export interface revealCellArgs extends fnArgs {
-    hadOverlay: boolean;
+    hadOverlay?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface showCellArgs extends fnArgs {
 }
 
-export function stringifyArgs(key: string, value: unknown): any {
+export function stringifyArgs(key: string, value: unknown): unknown {
     if (key === "cells") {
-        return `[] {length: ${(value as any[]).length}}`;
+        return `[] {length: ${(value as unknown[]).length}}`;
     } else if (typeof value === 'object' && Array.isArray(value) && value.length > 2) {
-        return `[] {length: ${(value as any[]).length}}`;
+        return `[] {length: ${(value as unknown[]).length}}`;
     }
     return value;
 }
@@ -205,7 +214,7 @@ export function revealCell(args: revealCellArgs): fnArgs {
             cells: args.cells, 
             index: args.index, 
             propertyName: 'hadOverlay', 
-            propertyValue: args.hadOverlay
+            propertyValue: args.hadOverlay ?? false
         })
     };
     return showCell(args as showCellArgs);

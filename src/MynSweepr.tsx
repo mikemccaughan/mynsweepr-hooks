@@ -8,10 +8,10 @@ import React, {
   SyntheticEvent,
   useLayoutEffect,
   useEffect,
-  useRef,
-  MouseEventHandler,
   MouseEventHandler,
 } from 'react';
+import { usePrevious } from './hooks';
+import { Utils } from './Utils';
 import Difficulty from './Difficulty';
 import Board from './Board';
 import { Scoreboard } from './Scoreboard';
@@ -24,6 +24,7 @@ import {
   revealCell,
   showCell,
   showAllCells,
+  flagCellArgs,
   clearAroundArgs,
   revealCellArgs,
   showCellArgs,
@@ -42,6 +43,7 @@ const MynSweepr: React.FC = () => {
   const [cells, setCells] = useState([] as Cell[]);
   const [mineCount, setMineCount] = useState(0);
   const [gameIsActive, setGameIsActive] = useState(false);
+  const [gameState, setGameState] = useState('unknown');
 
   const setRows = () => {
     document.documentElement.style.setProperty('--rows', height.toString());
@@ -53,16 +55,9 @@ const MynSweepr: React.FC = () => {
 
   function checkWin(args: fnArgs): void {
     if ((args?.mineCount ?? 1) === 0 && (args?.cells.every((cell) => !cell.hidden || cell.flag) ?? false)) {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
       args?.onWin ? args.onWin(args) : (() => {})();
     }
-  }
-
-  function usePrevious(value: string | number) {
-    const ref = useRef<string | number>();
-    useEffect(() => {
-      ref.current = value;
-    })
-    return ref.current;
   }
 
   useLayoutEffect(() => {
@@ -119,8 +114,6 @@ const MynSweepr: React.FC = () => {
       showLoseModal();
     }
     if (gameState === 'won') {
-      setCheckForHighScore(false);
-      setCheckForHighScore(true);
       showWinModal();
     }
     if (gameState === 'unknown') {
@@ -174,16 +167,28 @@ const MynSweepr: React.FC = () => {
   const handleRequestForNewBoard: MouseEventHandler = (
     e: MouseEvent<HTMLButtonElement, globalThis.MouseEvent>
   ) => {
+    e?.preventDefault();
     const selectedRadio: HTMLInputElement = window.document.querySelector('input[type="radio"][name="difficulty"]:checked') as HTMLInputElement;
     const selectedDifficulty: '?' | '9' | '16' | '30' = ((selectedRadio?.value ?? '9') as '?' | '9' | '16' | '30');
-    // TODO: Save custom width and height along with ? so we can reset correctly
+    let w: string, h: string;
+    if (selectedDifficulty === '?') {
+      w = (document.querySelector('#width') as HTMLInputElement)?.value;
+      h = (document.querySelector('#height') as HTMLInputElement)?.value;
+    }
     const tempOtherDifficulty: '9' | '16' | '30' = getTempOtherDifficulty(selectedDifficulty);
     setGameIsActive(false);
+    setMineCount(0);
     setDifficulty(tempOtherDifficulty);
     window.setTimeout(() => {
       setDifficulty(selectedDifficulty);
+      if (selectedDifficulty === '?') {
+        setHeight(Utils.asGoodNumber(h));
+        setWidth(Utils.asGoodNumber(w));
+      }
     }, 0);
   };
+
+  const resetBoard = () => { document.querySelector('button.reset')?.dispatchEvent(new Event('click')); }
 
   const makeStandardOnBlank = (extraToLog: string) => (args: fnArgs) => {
     Logger.trace(`${extraToLog} onBlank: args: ${JSON.stringify(args, stringifyArgs)}`);
@@ -198,6 +203,7 @@ const MynSweepr: React.FC = () => {
     if (loseModal && typeof loseModal.showModal === 'function' && !loseModal.open) {
       loseModal.showModal();
       loseModal.addEventListener('close', () => {
+        Logger.info('showLoseModal:close event handler');
         resetBoard();
       });
     }
@@ -208,6 +214,7 @@ const MynSweepr: React.FC = () => {
     if (winModal && typeof winModal.showModal === 'function' && !winModal.open) {
       winModal.showModal();
       winModal.addEventListener('close', () => {
+        Logger.info('showWinModal:close event handler');
         resetBoard();
       });
     }
@@ -307,7 +314,7 @@ const MynSweepr: React.FC = () => {
       onBlank: makeStandardOnBlank('handleCellDoubleClick: onBlank:'),
       onLose: makeStandardOnLose('handleCellDoubleClick: onLose:'),
       onNearby: makeStandardOnNearby('handleCellDoubleClick: onNearby:'),
-      onReveal: makeDoubleClickOnReveal('handleCellDoubleClick: onReveal:'),
+      onReveal: makeStandardOnReveal('handleCellDoubleClick: onReveal:'),
       onWin: makeStandardOnWin('handleCellDoubleClick: onWin:'),
     };
     const result = clearAround(args as clearAroundArgs);
@@ -322,7 +329,7 @@ const MynSweepr: React.FC = () => {
     e.preventDefault();
     setGameIsActive(true);
     Logger.trace('right-click', e);
-    let args: fnArgs = {
+    const args: fnArgs = {
       cells,
       mineCount,
       index: +((e.target as HTMLElement)?.dataset?.index ?? 0),
@@ -367,7 +374,6 @@ const MynSweepr: React.FC = () => {
           difficulty={difficulty}
           isActive={gameIsActive}
           remaining={mineCount}
-          checkHighScore={checkForHighScore}
           size={`${width}x${height}`}
           ></Scoreboard>
         <Board

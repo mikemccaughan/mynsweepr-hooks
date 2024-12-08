@@ -5,6 +5,7 @@ export interface ScoreboardProps {
   difficulty?: string;
   isActive: boolean;
   remaining: number;
+  size: string;
 }
 
 export const Scoreboard: React.FC<ScoreboardProps> = (
@@ -18,26 +19,29 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
     localStorage.getItem(`best-${props.difficulty ?? "unknown"}`)
   );
   const [formattedBest, setFormattedBest] = useState("--:--:--");
-  let isLoss = useRef(false);
+  const isLoss = useRef(false);
 
   useEffect(() => {
     setIsActive(props.isActive);
-    if (props.isActive) {
+    if (!props.isActive && props.remaining === 0 && seconds !== 0) {
+      Logger.info('Scoreboard: useEffect[props.isActive, props.remaining, seconds] setting seconds to 0');
       setSeconds(0);
     } else if (seconds > 0) {
-      isLoss.current = remaining > 0;
+      isLoss.current = props.remaining > 0;
     }
-  }, [props.isActive, remaining, seconds]);
+  }, [props.isActive, props.remaining, seconds]);
+
   useEffect(() => {
     setRemaining(props.remaining);
     if (props.remaining === 0 && !props.isActive) {
       isLoss.current = false;
     }
   }, [props.remaining, props.isActive]);
+
   useEffect(() => {
     setBest(localStorage.getItem(`best-${props.difficulty ?? "unknown"}`));
     setIsActive(false);
-    setSeconds(0);
+    //setSeconds(0);
   }, [props.difficulty]);
 
   const formatter = useMemo(
@@ -59,14 +63,17 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
   }, [props.difficulty, isActive, seconds]);
 
   useEffect(() => {
-    setFormattedSeconds(formatter.format(new Date(seconds * 1000)));
+    const ms = seconds * 1000;
+    const dt = new Date(ms);
+    const fs = formatter.format(dt);
+    Logger.log(fs);
+    setFormattedSeconds(fs);
   }, [seconds, formatter]);
 
   useEffect(() => {
-    let interval: number = -1;
+    let interval = -1;
     if (isActive) {
       interval = window.setInterval(() => {
-        Logger.log(`setting seconds to ${seconds + 1}`);
         setSeconds((seconds: number) => seconds + 1);
       }, 1000);
     } else if (!isActive && seconds !== 0) {
@@ -88,6 +95,13 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
       setFormattedBest(formatter.format(new Date(+best * 1000)));
     }
   }, [best, formatter]);
+
+  useEffect(() => {
+    if (!isActive && seconds !== 0 && remaining === 0) {
+      Logger.info('Scoreboard: useEffect[isActive, remaining, seconds] setting seconds to 0');
+      setSeconds(0);
+    }
+  }, [isActive, seconds, remaining])
 
   return (
     <aside>
