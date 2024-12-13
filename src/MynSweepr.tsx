@@ -9,6 +9,7 @@ import React, {
   useLayoutEffect,
   useEffect,
   MouseEventHandler,
+  useCallback,
 } from 'react';
 import { usePrevious } from './hooks';
 import { Utils } from './Utils';
@@ -34,7 +35,7 @@ import { Dialog, DialogManager } from './Dialog';
 import { Logger } from './Logger';
 
 const MynSweepr: React.FC = () => {
-  const [difficulty, setDifficulty] = useState('9');
+  const [difficulty, setDifficulty] = useState('9:9x9');
   const prevDifficulty = usePrevious(difficulty);
   const [width, setWidth] = useState(9);
   const prevWidth = usePrevious(width);
@@ -44,6 +45,12 @@ const MynSweepr: React.FC = () => {
   const [mineCount, setMineCount] = useState(0);
   const [gameIsActive, setGameIsActive] = useState(false);
   const [gameState, setGameState] = useState('unknown');
+
+  const difficultySelected = () => document.querySelector('input[name="difficulty"]:checked') as HTMLInputElement;
+  const widthInput = document.querySelector('#width') as HTMLInputElement;
+  const heightInput = document.querySelector('#height') as HTMLInputElement;
+  const currentWidth = () => Utils.asGoodNumber(widthInput.value);
+  const currentHeight = () => Utils.asGoodNumber(heightInput.value);
 
   const setRows = () => {
     document.documentElement.style.setProperty('--rows', height.toString());
@@ -60,11 +67,68 @@ const MynSweepr: React.FC = () => {
     }
   }
 
+  const showLoseModal = useCallback(() => {
+    DialogManager.instance.open('loss');
+    DialogManager.instance.onStateChange.addListener('close', () => {
+      DialogManager.instance.onStateChange.removeAllListeners('close');
+      Logger.info('showLoseModal:close event handler');
+      resetBoard();
+    });
+  }, []);
+
+  const showWinModal = useCallback(() => {
+    DialogManager.instance.open('win');
+    DialogManager.instance.onStateChange.addListener('close', () => {
+      DialogManager.instance.onStateChange.removeAllListeners('win');
+      Logger.info('showWinModal:close event handler');
+      setGameIsActive(false);
+      setMineCount(0);
+      resetBoard();
+    });
+  }, []);
+
+  const parseDifficulty = (difficulty?: string): { difficulty: string | null; width: number | null; height: number | null } | null => {
+    if (!Utils.isGoodString(difficulty, 5)) {
+      return null;
+    }
+    const difficultyRe = /^(\d{1,2}|\?):(\d+)x(\d+)$/;
+    if (!difficultyRe.test(difficulty)) {
+      return null;
+    }
+    const matches = difficultyRe.exec(difficulty);
+    if (Utils.isGood(matches) &&
+        Utils.isGoodString(matches[1]) &&
+        Utils.isGoodString(matches[2]) &&
+        Utils.isGoodString(matches[3])) {
+      return {
+        difficulty: matches[1],
+        width: Utils.asGoodNumber(matches[2]),
+        height: Utils.asGoodNumber(matches[3])
+      };
+    }
+
+    return null;
+  };
+
   useLayoutEffect(() => {
     setDifficulty(() => {
       if (difficulty !== prevDifficulty) {
-        setWidth((w: number) => difficulty === '?' ? w : +difficulty);
-        setHeight((h: number) => difficulty === '?' ? h : difficulty === '30' ? 16 : +difficulty);
+        setWidth((w: number) => {
+          const parsed = parseDifficulty(difficulty);
+          if (Utils.isGood(parsed)) {
+            return parsed.width ?? w;
+          } else {
+            return w;
+          }
+        });
+        setHeight((h: number) => {
+          const parsed = parseDifficulty(difficulty);
+          if (Utils.isGood(parsed)) {
+            return parsed.height ?? h;
+          } else {
+            return h;
+          }
+        });
       }
       return difficulty;
     });
@@ -119,12 +183,15 @@ const MynSweepr: React.FC = () => {
     if (gameState === 'unknown') {
       // do nothing
     }
-  }, [gameState]);
+  }, [gameState, showLoseModal, showWinModal]);
 
   const handleDifficultyChange = (
     e: MouseEvent<HTMLInputElement, globalThis.MouseEvent>
   ) => {
     const culty: string = e && (e.target as HTMLInputElement).value;
+    if (culty.startsWith('?')) {
+      (e.target as HTMLInputElement).value = `?:${currentWidth()}x${currentHeight()}`
+    }
     setGameIsActive(false);
     setDifficulty(culty);
   };
@@ -133,6 +200,9 @@ const MynSweepr: React.FC = () => {
     e: ChangeEvent<HTMLInputElement>
   ) => {
     const dth = +e.target.value;
+    if (difficultySelected().value === '?:0x0') {
+      difficultySelected().value = `?:${currentWidth()}x${currentHeight()}`
+    }
     setGameIsActive(false);
     setWidth(dth);
   };
@@ -141,24 +211,27 @@ const MynSweepr: React.FC = () => {
     e: ChangeEvent<HTMLInputElement>
   ) => {
     const ght = +e.target.value;
+    if (difficultySelected().value === '?:0x0') {
+      difficultySelected().value = `?:${currentWidth()}x${currentHeight()}`
+    }
     setGameIsActive(false);
     setHeight(ght);
   };
 
-  const getTempOtherDifficulty = (selectedDifficulty: '?' | '9' | '16' | '30'): '9' | '16' | '30' => {
-    let tempOtherDifficulty: '9' | '16' | '30';
+  const getTempOtherDifficulty = (selectedDifficulty: string): string => {
+    let tempOtherDifficulty: string;
     switch (selectedDifficulty) {
-      case '9':
-        tempOtherDifficulty = '16';
+      case '9:9x9':
+        tempOtherDifficulty = '16:16x16';
         break;
-      case '16':
-        tempOtherDifficulty = '30';
+      case '16:16x16':
+        tempOtherDifficulty = '30:30x16';
         break;
-      case '30':
-        tempOtherDifficulty = '16';
+      case '30:30x16':
+        tempOtherDifficulty = '16:16x16';
         break;
-      case '?':
-        tempOtherDifficulty = '9';
+      default:
+        tempOtherDifficulty = '9:9x9';
         break;
     }
     return tempOtherDifficulty;
@@ -168,27 +241,29 @@ const MynSweepr: React.FC = () => {
     e: MouseEvent<HTMLButtonElement, globalThis.MouseEvent>
   ) => {
     e?.preventDefault();
-    const selectedRadio: HTMLInputElement = window.document.querySelector('input[type="radio"][name="difficulty"]:checked') as HTMLInputElement;
-    const selectedDifficulty: '?' | '9' | '16' | '30' = ((selectedRadio?.value ?? '9') as '?' | '9' | '16' | '30');
-    let w: string, h: string;
-    if (selectedDifficulty === '?') {
-      w = (document.querySelector('#width') as HTMLInputElement)?.value;
-      h = (document.querySelector('#height') as HTMLInputElement)?.value;
+    const selectedRadio: HTMLInputElement = difficultySelected();
+    const selectedDifficulty: string = selectedRadio?.value ?? '9:9x9';
+    let w: number, h: number;
+    if (selectedDifficulty.startsWith('?')) {
+      w = currentWidth();
+      h = currentHeight();
     }
-    const tempOtherDifficulty: '9' | '16' | '30' = getTempOtherDifficulty(selectedDifficulty);
+    const tempOtherDifficulty: string = getTempOtherDifficulty(selectedDifficulty);
     setGameIsActive(false);
     setMineCount(0);
     setDifficulty(tempOtherDifficulty);
     window.setTimeout(() => {
       setDifficulty(selectedDifficulty);
-      if (selectedDifficulty === '?') {
+      if (selectedDifficulty.startsWith('?')) {
         setHeight(Utils.asGoodNumber(h));
         setWidth(Utils.asGoodNumber(w));
       }
     }, 0);
   };
 
-  const resetBoard = () => { document.querySelector('button.reset')?.dispatchEvent(new Event('click')); }
+  const resetBoard = () => { 
+    document.querySelector('button.reset')?.dispatchEvent(new Event('click')); 
+  };
 
   const makeStandardOnBlank = (extraToLog: string) => (args: fnArgs) => {
     Logger.trace(`${extraToLog} onBlank: args: ${JSON.stringify(args, stringifyArgs)}`);
@@ -196,28 +271,6 @@ const MynSweepr: React.FC = () => {
     setCells(args.cells);
     setMineCount(args.mineCount);
     return args;
-  };
-
-  const showLoseModal = () => {
-    const loseModal = document.getElementById('lose') as HTMLDialogElement;
-    if (loseModal && typeof loseModal.showModal === 'function' && !loseModal.open) {
-      loseModal.showModal();
-      loseModal.addEventListener('close', () => {
-        Logger.info('showLoseModal:close event handler');
-        resetBoard();
-      });
-    }
-  };
-
-  const showWinModal = () => {
-    const winModal = document.getElementById('win') as HTMLDialogElement;
-    if (winModal && typeof winModal.showModal === 'function' && !winModal.open) {
-      winModal.showModal();
-      winModal.addEventListener('close', () => {
-        Logger.info('showWinModal:close event handler');
-        resetBoard();
-      });
-    }
   };
 
   const makeStandardOnLose = (extraToLog: string) => (args: fnArgs) => {

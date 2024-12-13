@@ -5,6 +5,7 @@ interface DifficultyProps {
   difficulty?: string;
   width?: number;
   height?: number;
+  encoded?: string; // difficulty:widthxheight
   difficultyChanged?: EventHandler<
     MouseEvent<HTMLInputElement, globalThis.MouseEvent>
   >;
@@ -21,7 +22,7 @@ const Difficulty: React.FC<DifficultyProps> = ({
   heightChanged
 }: DifficultyProps) => {
   return (
-    <fieldset>
+    <fieldset data-difficulty="9:9x9">
       <legend>Select difficulty</legend>
       <ul>
         <li>
@@ -29,8 +30,8 @@ const Difficulty: React.FC<DifficultyProps> = ({
             <input
               type="radio"
               name="difficulty"
-              value="9"
-              defaultChecked={difficulty === '9'}
+              value="9:9x9"
+              defaultChecked={difficulty?.startsWith('9')}
               onClick={difficultyChanged}
             />
             <span>Easy</span>
@@ -42,8 +43,8 @@ const Difficulty: React.FC<DifficultyProps> = ({
             <input
               type="radio"
               name="difficulty"
-              value="16"
-              defaultChecked={difficulty === '16'}
+              value="16:16x16"
+              defaultChecked={difficulty?.startsWith('16')}
               onClick={difficultyChanged}
             />
             <span>Medium</span>
@@ -55,8 +56,8 @@ const Difficulty: React.FC<DifficultyProps> = ({
             <input
               type="radio"
               name="difficulty"
-              value="30"
-              defaultChecked={difficulty === '30'}
+              value="30:30x16"
+              defaultChecked={difficulty?.startsWith('30')}
               onClick={difficultyChanged}
             />
             <span>Hard</span>
@@ -68,8 +69,8 @@ const Difficulty: React.FC<DifficultyProps> = ({
             <input
               type="radio"
               name="difficulty"
-              value="?"
-              defaultChecked={difficulty === '?'}
+              value="?:0x0"
+              defaultChecked={difficulty?.startsWith('?')}
               onClick={difficultyChanged}
             />
             <span>Custom</span>

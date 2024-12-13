@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Logger } from "./Logger";
+import { IStorage, Store } from "./store";
+import { Utils } from "./Utils";
 
 export interface ScoreboardProps {
   difficulty?: string;
@@ -15,21 +17,25 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
   const [formattedSeconds, setFormattedSeconds] = useState("00:00:00");
   const [isActive, setIsActive] = useState(props.isActive);
   const [remaining, setRemaining] = useState(props.remaining);
-  const [best, setBest] = useState(
-    localStorage.getItem(`best-${props.difficulty ?? "unknown"}`)
-  );
   const [formattedBest, setFormattedBest] = useState("--:--:--");
   const isLoss = useRef(false);
+  const store: IStorage = useMemo(() => new Store('local', 'hm.mynsweepr.best'), []);
+  const [best, setBest] = useState(
+    Utils.parseSeconds(store.getItem(Utils.getCurrentDifficulty() ?? '9:9x9'))
+  );
 
   useEffect(() => {
     setIsActive(props.isActive);
     if (!props.isActive && props.remaining === 0 && seconds !== 0) {
       Logger.info('Scoreboard: useEffect[props.isActive, props.remaining, seconds] setting seconds to 0');
+      if (!isLoss.current && (best === Number.NEGATIVE_INFINITY || best > seconds)) {
+        setBest(seconds);
+      }
       setSeconds(0);
     } else if (seconds > 0) {
       isLoss.current = props.remaining > 0;
     }
-  }, [props.isActive, props.remaining, seconds]);
+  }, [props.isActive, props.remaining, seconds, best, isLoss]);
 
   useEffect(() => {
     setRemaining(props.remaining);
@@ -39,10 +45,8 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
   }, [props.remaining, props.isActive]);
 
   useEffect(() => {
-    setBest(localStorage.getItem(`best-${props.difficulty ?? "unknown"}`));
     setIsActive(false);
-    //setSeconds(0);
-  }, [props.difficulty]);
+  }, [props.difficulty, store]);
 
   const formatter = useMemo(
     () =>
@@ -57,16 +61,15 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
   );
 
   useEffect(() => {
-    if (isActive && seconds >= 0) {
-      setBest(localStorage.getItem(`best-${props.difficulty ?? "unknown"}`));
+    if (!isLoss.current && seconds > 0 && (best === Number.NEGATIVE_INFINITY || best > seconds)) {
+      setBest(seconds);
     }
-  }, [props.difficulty, isActive, seconds]);
+  }, [props.difficulty, isLoss, isActive, seconds, best]);
 
   useEffect(() => {
     const ms = seconds * 1000;
     const dt = new Date(ms);
     const fs = formatter.format(dt);
-    Logger.log(fs);
     setFormattedSeconds(fs);
   }, [seconds, formatter]);
 
@@ -81,8 +84,8 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
       if (best && !isNaN(+best) && +best < seconds) {
         return () => window.clearInterval(interval);
       }
-      if (!isLoss.current) {
-        setBest(seconds.toString());
+      if (!isLoss.current && (best === Number.NEGATIVE_INFINITY || best > seconds)) {
+        setBest(seconds);
       }
     }
     return () => window.clearInterval(interval);
@@ -92,16 +95,22 @@ export const Scoreboard: React.FC<ScoreboardProps> = (
     if (typeof best !== "string" || best == null || isNaN(+best)) {
       setFormattedBest("--:--:--");
     } else if (!isLoss.current) {
-      setFormattedBest(formatter.format(new Date(+best * 1000)));
+      const bestFormatted = best === 0 ? "--:--:--" : formatter.format(new Date(+best * 1000));
+      const bestKey = Utils.getCurrentDifficulty() ?? '9:9x9';
+      store.setItem(bestKey, bestFormatted);
+      setFormattedBest(bestFormatted);
     }
-  }, [best, formatter]);
+  }, [best, formatter, store]);
 
   useEffect(() => {
     if (!isActive && seconds !== 0 && remaining === 0) {
       Logger.info('Scoreboard: useEffect[isActive, remaining, seconds] setting seconds to 0');
+      if ((best === Number.NEGATIVE_INFINITY || best > seconds)) {
+        setBest(seconds);
+      }
       setSeconds(0);
     }
-  }, [isActive, seconds, remaining])
+  }, [isActive, seconds, remaining, best])
 
   return (
     <aside>
