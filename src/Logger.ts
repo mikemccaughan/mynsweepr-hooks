@@ -8,38 +8,38 @@ export enum LogLevel {
 
 export class Logger {
     static level: LogLevel = LogLevel.Error;
-    static error(...data: any[]): void;
-    static error(message?: any, ...optionalParams: any[]) {
+    static error(...data: unknown[]): void;
+    static error(message?: unknown, ...optionalParams: unknown[]) {
         if (Logger.level >= LogLevel.Error) {
             console.error(message, ...optionalParams);
         }
     }
-    static warn(...data: any[]): void;
-    static warn(message?: any, ...optionalParams: any[]) {
+    static warn(...data: unknown[]): void;
+    static warn(message?: unknown, ...optionalParams: unknown[]) {
         if (Logger.level >= LogLevel.Warn) {
             console.warn(message, ...optionalParams);
         }
     }
-    static log(...data: any[]): void;
-    static log(message?: any, ...optionalParams: any[]): void {
+    static log(...data: unknown[]): void;
+    static log(message?: unknown, ...optionalParams: unknown[]): void {
         if (Logger.level >= LogLevel.Log) {
             console.log(message, ...optionalParams);
         }
     }
-    static info(...data: any[]): void;
-    static info(message?: any, ...optionalParams: any[]): void {
+    static info(...data: unknown[]): void;
+    static info(message?: unknown, ...optionalParams: unknown[]): void {
         if (Logger.level >= LogLevel.Info) {
             console.info(message, ...optionalParams);
         }
     }
-    static trace(...data: any[]): void;
-    static trace(message?: any, ...optionalParams: any[]): void {
+    static trace(...data: unknown[]): void;
+    static trace(message?: unknown, ...optionalParams: unknown[]): void {
         if (Logger.level >= LogLevel.Trace) {
             console.trace(message, ...optionalParams);
         }
     }
-    static table(tabularData: any, properties?: readonly string[] | undefined): void;
-    static table(tabularData: any, properties?: string[] | undefined): void {
+    static table(tabularData: unknown, properties?: readonly string[] | undefined): void;
+    static table(tabularData: unknown, properties?: string[] | undefined): void {
         if (Logger.level >= LogLevel.Log) {
             console.table(tabularData, properties);
         }

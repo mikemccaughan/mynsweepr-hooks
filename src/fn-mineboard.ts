@@ -192,7 +192,8 @@ export interface revealCellArgs extends fnArgs {
     hadOverlay?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-interface 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface showCellArgs extends fnArgs {
 }
 
@@ -255,7 +256,8 @@ export function showCell(args: showCellArgs): fnArgs {
     return args;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-interface 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface flagCellArgs extends fnArgs {
 }
 

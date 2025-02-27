@@ -35,16 +35,16 @@ import { Dialog, DialogManager } from './Dialog';
 import { Logger } from './Logger';
 
 const MynSweepr: React.FC = () => {
-  const [difficulty, setDifficulty] = useState('9:9x9');
-  const prevDifficulty = usePrevious(difficulty);
-  const [width, setWidth] = useState(9);
-  const prevWidth = usePrevious(width);
-  const [height, setHeight] = useState(9);
-  const prevHeight = usePrevious(height);
-  const [cells, setCells] = useState([] as Cell[]);
-  const [mineCount, setMineCount] = useState(0);
-  const [gameIsActive, setGameIsActive] = useState(false);
-  const [gameState, setGameState] = useState('unknown');
+  const [difficulty, setDifficulty]: [string, React.Dispatch<React.SetStateAction<string>>] = useState('9:9x9');
+  const prevDifficulty: string = Utils.asGoodString(usePrevious(difficulty));
+  const [width, setWidth]: [number, React.Dispatch<React.SetStateAction<number>>] = useState(9);
+  const prevWidth: number = Utils.asGoodNumber(usePrevious(width));
+  const [height, setHeight]: [number, React.Dispatch<React.SetStateAction<number>>] = useState(9);
+  const prevHeight: number = Utils.asGoodNumber(usePrevious(height));
+  const [cells, setCells]: [Cell[], React.Dispatch<React.SetStateAction<Cell[]>>] = useState([] as Cell[]);
+  const [mineCount, setMineCount]: [number, React.Dispatch<React.SetStateAction<number>>] = useState(0);
+  const [gameIsActive, setGameIsActive]: [boolean, React.Dispatch<React.SetStateAction<boolean>>] = useState(false);
+  const [gameState, setGameState]: [string, React.Dispatch<React.SetStateAction<string>>] = useState('unknown');
 
   const difficultySelected = () => document.querySelector('input[name="difficulty"]:checked') as HTMLInputElement;
   const widthInput = document.querySelector('#width') as HTMLInputElement;
@@ -62,12 +62,13 @@ const MynSweepr: React.FC = () => {
 
   function checkWin(args: fnArgs): void {
     if ((args?.mineCount ?? 1) === 0 && (args?.cells.every((cell) => !cell.hidden || cell.flag) ?? false)) {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      args?.onWin ? args.onWin(args) : (() => {})();
+      // eslint-disable-next-line @typescript-eslint/no-empty-function 
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      typeof args?.onWin === 'function' ? args.onWin(args) : (() => {})();
     }
   }
 
-  const showLoseModal = useCallback(() => {
+  const showLoseModal: () => void = useCallback(() => {
     DialogManager.instance.open('loss');
     DialogManager.instance.onStateChange.addListener('close', () => {
       DialogManager.instance.onStateChange.removeAllListeners('close');
@@ -76,7 +77,7 @@ const MynSweepr: React.FC = () => {
     });
   }, []);
 
-  const showWinModal = useCallback(() => {
+  const showWinModal: () => void = useCallback(() => {
     DialogManager.instance.open('win');
     DialogManager.instance.onStateChange.addListener('close', () => {
       DialogManager.instance.onStateChange.removeAllListeners('win');
@@ -188,8 +189,8 @@ const MynSweepr: React.FC = () => {
   const handleDifficultyChange = (
     e: MouseEvent<HTMLInputElement, globalThis.MouseEvent>
   ) => {
-    const culty: string = e && (e.target as HTMLInputElement).value;
-    if (culty.startsWith('?')) {
+    const culty: string = (e?.target as HTMLInputElement)?.value;
+    if (Utils.isGoodString(culty) && culty.startsWith('?')) {
       (e.target as HTMLInputElement).value = `?:${currentWidth()}x${currentHeight()}`
     }
     setGameIsActive(false);
@@ -199,7 +200,7 @@ const MynSweepr: React.FC = () => {
   const handleWidthChange: ChangeEventHandler<HTMLInputElement> = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
-    const dth = +e.target.value;
+    const dth = +e?.target?.value;
     if (difficultySelected().value === '?:0x0') {
       difficultySelected().value = `?:${currentWidth()}x${currentHeight()}`
     }
@@ -210,7 +211,7 @@ const MynSweepr: React.FC = () => {
   const handleHeightChange: ChangeEventHandler<HTMLInputElement> = (
     e: ChangeEvent<HTMLInputElement>
   ) => {
-    const ght = +e.target.value;
+    const ght = +e?.target?.value;
     if (difficultySelected().value === '?:0x0') {
       difficultySelected().value = `?:${currentWidth()}x${currentHeight()}`
     }
@@ -326,7 +327,7 @@ const MynSweepr: React.FC = () => {
   const handleCellClick: EventHandler<SyntheticEvent> = (e: SyntheticEvent) => {
     Logger.trace('click', e);
     setGameIsActive(true);
-    if (cells[+((e.target as HTMLElement)?.dataset?.index ?? 0)].flag) {
+    if (cells[+((e.target as HTMLElement)?.dataset?.index ?? 0)]?.flag) {
       // ignore single clicks on flagged cells
       return;
     }

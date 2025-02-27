@@ -10,7 +10,7 @@ export type DIALOG_ELEMENT_NAME = "Dialog";
 export type DialogType = React.ReactElement<DialogProps, DIALOG_ELEMENT_NAME> & {isOpen?:boolean;}
 
 export class DialogManager {
-    [key: string | symbol]: any;
+    [key: string | symbol]: unknown;
     dialogs: Map<string, DialogType>;
     dialogStates: Map<string, boolean>;
     onStateChange: EventEmitter;
@@ -27,7 +27,7 @@ export class DialogManager {
         return this.#instance = new Proxy(new DialogManager(), DialogManager.indexer);
     }
     private static indexer: ProxyHandler<DialogManager> = {
-        get(target: DialogManager, property: string): boolean | any {
+        get(target: DialogManager, property: string): boolean | unknown {
             if (target.dialogStates.has(property)) {
                 const value = target.dialogStates.get(property);
                 Logger.trace(`ProxyHandler for DialogManager: get "${property}" from dialogStates: ${value}`);
@@ -36,13 +36,13 @@ export class DialogManager {
                 return target[property];
             }
         },
-        set(target: DialogManager, property: string, value: boolean | any): boolean {
+        set(target: DialogManager, property: string, value: boolean | unknown): boolean {
             if (target.dialogStates.has(property)) {
-                Logger.trace(`ProxyHandler for DialogManager: set "${property}" in dialogStates: ${value}`);
-                target.dialogStates.set(property, value);
+                Logger.trace(`ProxyHandler for DialogManager: set "${property}" in dialogStates: ${!!value}`);
+                target.dialogStates.set(property, !!value);
                 target.onStateChange.emit(property, value as boolean);
             } else {
-                target[property] = value;
+                target[property] = !!value;
             }
             return true;
         }

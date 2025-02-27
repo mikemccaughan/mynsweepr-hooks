@@ -206,6 +206,7 @@ class CookieStore extends BaseStore implements IStorage {
             document.cookie = `${allSavedKeysAndValues[i][0]}=${allSavedKeysAndValues[i][1]};max-age=31536000`;
         }
     }
+    
     key(index: number): string {
         if (this.length === 0) this.loadCookies();
         return Object.keys(this._cookieStore)[index];
@@ -228,6 +229,7 @@ class CookieStore extends BaseStore implements IStorage {
     }
     clear(): void {
         if (this.length === 0) this.loadCookies();
+        this._cookieStore = Object.fromEntries(Object.entries(this._cookieStore).filter(([k,]) => k.startsWith(this.prefix)));
         this.saveCookies();
     }
 }
