@@ -8,17 +8,18 @@
     "events": "^3.3.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "prop-types": "^15.8.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-refresh": "^0.14.0",
     "react-scripts": "^5.0.1",
     "sass": "^1.54.8",
-    "typescript": "^5.7.3",
+    "typescript": "^5.2",
     "webpack": "^5.74.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:deploy": "yarn set version latest && yarn install && yarn dlx update-browserslist-db@latest && react-scripts build && cp -r build ../heretic-monkey.link/publish/mynsweepr-hooks",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -51,8 +52,8 @@
     "@types/jest": "^27.5.2",
     "@types/node": "^16.11.56",
     "@types/prop-types": "^15.7.5",
-    "@types/react": "^18.0.25",
-    "@types/react-dom": "^18.0.9",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
     "browserslist": "^4.21.3",
@@ -62,10 +63,10 @@
     "postcss": "^8.4.19",
     "postcss-normalize": "^10.0.1"
   },
-  "packageManager": "yarn@4.6.0",
+  "packageManager": "yarn@4.12.0",
   "overrides": {
     "fork-ts-checker-webpack-plugin": "^9.0.2",
-    "typescript": "^5.7.3",
+    "typescript": "^5.2",
     "@typescript-eslint/typescript-estree": "^5.62.0"
   }
 }

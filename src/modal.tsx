@@ -108,7 +108,6 @@ export class ModalManager {
     }
     public open(id: string): typeof Modal {
         this.modalStates[id] = true;
-        this.modals[id].defaultProps?.ref
         return this.modals[id];
     }
 }

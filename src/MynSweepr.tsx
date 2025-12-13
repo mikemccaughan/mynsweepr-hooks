@@ -73,7 +73,7 @@ const MynSweepr: React.FC = () => {
     DialogManager.instance.onStateChange.addListener('close', () => {
       DialogManager.instance.onStateChange.removeAllListeners('close');
       Logger.info('showLoseModal:close event handler');
-      resetBoard();
+      retryBoard();
     });
   }, []);
 
@@ -262,6 +262,33 @@ const MynSweepr: React.FC = () => {
     }, 0);
   };
 
+  const handleRequestForRetry: MouseEventHandler = (
+    e: MouseEvent<HTMLButtonElement, globalThis.MouseEvent>
+  ) => {
+    e?.preventDefault();
+    const selectedRadio: HTMLInputElement = difficultySelected();
+    const selectedDifficulty: string = selectedRadio?.value ?? '9:9x9';
+    let w: number, h: number;
+    if (selectedDifficulty.startsWith('?')) {
+      w = currentWidth();
+      h = currentHeight();
+    }
+    setGameIsActive(false);
+    setMineCount(0);
+    setDifficulty(selectedDifficulty);
+    window.setTimeout(() => {
+      setDifficulty(selectedDifficulty);
+      if (selectedDifficulty.startsWith('?')) {
+        setHeight(Utils.asGoodNumber(h));
+        setWidth(Utils.asGoodNumber(w));
+      }
+    }, 0);
+  };
+
+  const retryBoard = () => { 
+    document.querySelector('button.retry')?.dispatchEvent(new Event('click')); 
+  };
+
   const resetBoard = () => { 
     document.querySelector('button.reset')?.dispatchEvent(new Event('click')); 
   };
@@ -420,7 +447,14 @@ const MynSweepr: React.FC = () => {
           type="button"
           className="reset"
           onClick={handleRequestForNewBoard}>
-          Reset
+          New Board
+        </button>  
+        <button 
+          type="button"
+          className="retry"
+          hidden={true}
+          onClick={handleRequestForRetry}>
+          Retry
         </button>  
       </header>
       <main>
