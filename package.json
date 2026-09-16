@@ -8,18 +8,18 @@
     "events": "^3.3.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "prop-types": "^15.8.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "react-refresh": "^0.14.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-refresh": "^0.18.0",
     "react-scripts": "^5.0.1",
-    "sass": "^1.54.8",
-    "typescript": "^5.2",
+    "sass": "^1.102.0",
+    "typescript": "5.2",
     "webpack": "^5.74.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:deploy": "yarn set version latest && yarn install && yarn dlx update-browserslist-db@latest && react-scripts build && cp -r build ../heretic-monkey.link/publish/mynsweepr-hooks",
+    "build:deploy": "yarn set version stable && yarn set version latest && yarn dlx update-browserslist-db@latest && yarn dlx npm-check-updates -- -u -x typescript -u && yarn install && yarn dlx react-scripts -- build && cp -ruv build -t ../heretic-monkey.link/publish/mynsweepr-hooks && mv ../heretic-monkey.link/publish/mynsweepr-hooks/build ../heretic-monkey.link/publish/mynsweepr-hooks && rm -rf ../heretic-monkey.link/publish/mynsweepr-hooks/build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -43,9 +43,9 @@
     "@babel/eslint-parser": "^7.18.9",
     "@babel/plugin-syntax-flow": "^7.26.0",
     "@babel/plugin-transform-react-jsx": "^7.25.9",
-    "@testing-library/dom": "^8.17.1",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^13.3.0",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.4.3",
     "@types/eslint": "^8.4.6",
     "@types/events": "^3",
@@ -54,19 +54,24 @@
     "@types/prop-types": "^15.7.5",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.24.0",
-    "@typescript-eslint/parser": "^8.24.0",
-    "browserslist": "^4.21.3",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "browserslist": "^4.28.8",
     "eslint": "^8.1.0",
     "eslint-config-react-app": "latest",
     "eslint-plugin-flowtype": "^8.0.3",
     "postcss": "^8.4.19",
     "postcss-normalize": "^10.0.1"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.18.0",
   "overrides": {
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "typescript": "^5.2",
     "@typescript-eslint/typescript-estree": "^5.62.0"
+  },
+  "dependenciesMeta": {
+    "eslint": {
+      "unplugged": true
+    }
   }
 }
