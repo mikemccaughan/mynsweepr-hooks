@@ -60,7 +60,7 @@ const RAW_RUNTIME_STATE =
           ["react-dom", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:19.2.8"],\
           ["react-refresh", "npm:0.18.0"],\
           ["react-scripts", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:5.0.1"],\
-          ["sass", "npm:1.102.0"],\
+          ["sass", "npm:1.104.1"],\
           ["typescript", "patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"],\
           ["webpack", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:5.97.1"]\
         ],\
@@ -13195,7 +13195,7 @@ const RAW_RUNTIME_STATE =
           ["react-dom", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:19.2.8"],\
           ["react-refresh", "npm:0.18.0"],\
           ["react-scripts", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:5.0.1"],\
-          ["sass", "npm:1.102.0"],\
+          ["sass", "npm:1.104.1"],\
           ["typescript", "patch:typescript@npm%3A5.2.2#optional!builtin<compat/typescript>::version=5.2.2&hash=f3b441"],\
           ["webpack", "virtual:c7f135f527c10380ab92d680a71d1986a707e30efb63b24be404b9ee6ef7c4d04d0788878b848cb61f4f4065d03135108290dd5669bef2ad91e2234054e19f39#npm:5.97.1"]\
         ],\
@@ -16607,13 +16607,13 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["sass", [\
-      ["npm:1.102.0", {\
-        "packageLocation": "./.yarn/cache/sass-npm-1.102.0-f68ceaf025-c69c254db6.zip/node_modules/sass/",\
+      ["npm:1.104.1", {\
+        "packageLocation": "./.yarn/cache/sass-npm-1.104.1-1e13a9142c-e237f0ab07.zip/node_modules/sass/",\
         "packageDependencies": [\
           ["@parcel/watcher", "npm:2.5.0"],\
           ["chokidar", "npm:5.0.0"],\
           ["immutable", "npm:5.1.9"],\
-          ["sass", "npm:1.102.0"],\
+          ["sass", "npm:1.104.1"],\
           ["source-map-js", "npm:1.2.1"]\
         ],\
         "linkType": "HARD"\
